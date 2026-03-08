@@ -1,7 +1,9 @@
 {
   "builds": [
-    {"src": "index.html", "use": "@vercel/static"}
+    {"src": "index.html", "use": "@vercel/static"},
+    {"src": "src/stickers.html", "use": "@vercel/static"}
   ],
+  "outputDirectory": ".",
   "headers": [
     {
       "source": "/(.*)",
@@ -18,6 +20,6 @@
     }
   ],
   "redirects": [
-    {"source": "/", "destination": "/index.html", "status": 200}
+    {"source": "/(.*)", "destination": "/$1.html", "status": 200}
   ]
 }
