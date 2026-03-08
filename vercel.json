@@ -1,0 +1,23 @@
+{
+  "builds": [
+    {"src": "index.html", "use": "@vercel/static"}
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {"source": "/", "destination": "/index.html", "status": 200}
+  ]
+}
