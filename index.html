@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DibujaSimple - Dibuja Fácil y Divertido 🎨</title>
+    <style>
+        /* 🎨 Estilos simples y responsivos */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Comic Sans MS', 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        .app-container {
+            background: white;
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            max-width: 100%;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+        }
+
+        .tool-group {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        button, select, input[type="color"] {
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: 2px solid transparent;
+        }
+
+        button:hover {
+            background: #5a6fd6;
+            transform: translateY(-2px);
+        }
+
+        button.active {
+            background: #667eea;
+            border-color: #f8f9fa;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.3);
+        }
+
+        button.secondary {
+            background: #6c757d;
+        }
+
+        button.primary {
+            background: #28a745;
+        }
+
+        .color-picker {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        input[type="color"] {
+            width: 50px;
+            height: 40px;
+            border: none;
+            cursor: pointer;
+        }
+
+        canvas {
+            border: 3px solid #667eea;
+            border-radius: 8px;
+            background: white;
+            cursor: crosshair;
+            display: block;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .toolbar-info {
+            font-size: 0.875rem;
+            color: #6c757d;
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+
+        /* Responsive para móviles */
+        @media (max-width: 768px) {
+            h1 { font-size: 1.5rem; }
+            
+            .toolbar {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            
+            canvas {
+                max-width: 100%;
+                border-width: 2px;
+            }
+
+            button, select, input[type="color"] {
+                width: 100%;
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>🎨 DibujaSimple</h1>
+            <p style="color: #6c757d;">Dibuja fácil y divertido — ¡incluso los niños pueden!</p>
+        </header>
+
+        <div class="toolbar">
+            <div class="tool-group">
+                <button id="btn-pencil" class="active" title="Lápiz">🖊️ Lápiz</button>
+                <button id="btn-brush-1" title="Pincel Gordo">🎨 Pincel 1</button>
+                <button id="btn-brush-2" title="Pincel Fino">✨ Pincel 2</button>
+            </div>
+
+            <div class="tool-group color-picker">
+                <label for="color-input">Color:</label>
+                <input type="color" id="color-input" value="#000000">
+            </div>
+
+            <div class="tool-group">
+                <button id="btn-size-small" title="Grosor pequeño">📏 Fino</button>
+                <button id="btn-size-medium" class="active" title="Grosor medio">📏 Medio</button>
+                <button id="btn-size-large" title="Grosor grande">📅 Gordo</button>
+            </div>
+
+            <div class="tool-group">
+                <select id="eraser-toggle" title="Borrador">
+                    <option value="draw">✏️ Dibuja</option>
+                    <option value="erase">🧹 Borrador</option>
+                </select>
+            </div>
+
+            <div class="tool-group">
+                <button id="btn-undo" class="secondary">⬅️ Deshacer</button>
+                <button id="btn-clear" class="secondary">🗑️ Borrar todo</button>
+                <button id="btn-save" class="primary">💾 Guardar</button>
+            </div>
+        </div>
+
+        <canvas id="drawing-canvas" width="800" height="600"></canvas>
+
+        <p class="toolbar-info">
+            💡 Tips: Usa mouse o dedo en pantalla táctil • Guarda tu dibujo como PNG • ¡Diviértete creando! 🎨
+        </p>
+
+        <!-- Banner de publicidad (opcional - descomentar para activar) -->
+        <!-- 
+        <div style="margin-top:1rem; text-align:center;">
+            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=CA-PUBLISHER-ID"></script>
+            <ins class="adsbygoogle" style="display:block"></ins>
+        </div> 
+        -->
+    </div>
+
+    <script src="drawing-app.js"></script>
+</body>
+</html>

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎨 DibujaSimple - ¡Dibuja con Felicidad!</title>
+    <style>
+        /* 🎨 UI Kid-Friendly: Colorido, Juguetón y Atractivo */
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Comic Sans MS', 'Verdana', sans-serif;
+            background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 25%, #45B7D1 50%, #FFA07A 75%, #98D8C8 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 30px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            max-width: 100%;
+            border: 8px solid #FFD93D;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: #FF6B6B;
+            font-weight: bold;
+            text-shadow: 2px 2px 0px #FFD93D;
+            margin-bottom: 0.5rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #4ECDC4;
+            font-weight: bold;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            background: linear-gradient(to right, #FFD93D, #FF6B6B);
+            border-radius: 20px;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .tool-group {
+            display: flex;
+            gap: 0.3rem;
+            align-items: center;
+        }
+
+        button {
+            padding: 0.6rem 1rem;
+            border: none;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        button:hover {
+            transform: translateY(-2px) scale(1.05);
+        }
+
+        button:active {
+            transform: translateY(0) scale(0.95);
+        }
+
+        .btn-primary {
+            background: linear-gradient(145deg, #FF6B6B, #FF8E8E);
+            color: white;
+            font-size: 1.2rem;
+            padding: 0.7rem 1.2rem;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(145deg, #4ECDC4, #6BDCCB);
+            color: white;
+        }
+
+        .btn-undo {
+            background: linear-gradient(145deg, #98D8C8, #A8F0D8);
+            color: #2C3E50;
+        }
+
+        .btn-color-picker {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            padding: 0;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .color-picker {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        input[type="color"] {
+            width: 55px;
+            height: 45px;
+            border: none;
+            cursor: pointer;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+
+        canvas {
+            border: 8px solid #FFD93D;
+            border-radius: 20px;
+            background: white;
+            cursor: crosshair;
+            display: block;
+            max-width: 100%;
+            margin: 0 auto;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .toolbar-info {
+            font-size: 0.9rem;
+            color: #6c757d;
+            text-align: center;
+            margin-top: 0.5rem;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 0.5rem;
+            border-radius: 15px;
+        }
+
+        .tips-icon {
+            font-size: 1.2rem;
+            margin-right: 0.3rem;
+        }
+
+        /* Confeti animado para celebrar */
+        @keyframes celebrate {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(5deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+
+        .celebrate-btn {
+            animation: celebrate 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>🎨 DibujaSimple</h1>
+            <p class="subtitle">¡Diviértete dibujando! Es súper fácil, incluso para los más pequeños 🌟</p>
+        </header>
+
+        <div class="toolbar toolbar-anim">
+            <div class="tool-group">
+                <button class="btn-primary celebrate-btn" id="btn-pencil" title="✏️ Lápiz">✏️</button>
+                <button class="btn-secondary" id="btn-brush-1" title="🎨 Pincel Gordo">🎨</button>
+                <button class="btn-secondary" id="btn-brush-2" title="✨ Borde Fino">✨</button>
+            </div>
+
+            <div class="tool-group color-picker">
+                <label for="color-input">🎨 Elige tu color:</label>
+                <input type="color" id="color-input" value="#FF6B6B" title="Selecciona un color divertido">
+            </div>
+
+            <div class="tool-group">
+                <button class="btn-undo" id="btn-size-small" title="📏 Fino">📏</button>
+                <button class="btn-undo" id="btn-size-medium" title="📏 Medio">📏</button>
+                <button class="btn-undo" id="btn-size-large" title="📏 Gordo">📏</button>
+            </div>
+
+            <div class="tool-group">
+                <select id="eraser-toggle" title="🧹 Borrador">
+                    <option value="draw">✏️ Dibuja</option>
+                    <option value="erase">🧹 Borrador</option>
+                </select>
+            </div>
+
+            <div class="tool-group">
+                <button class="btn-undo" id="btn-undo" title="⬅️ Deshacer">↩️</button>
+                <button class="btn-secondary" id="btn-clear" title="🗑️ Limpiar">🗑️</button>
+                <button class="btn-primary" id="btn-save" title="💾 Guardar">💾</button>
+            </div>
+        </div>
+
+        <canvas id="drawing-canvas" width="800" height="600"></canvas>
+
+        <div class="toolbar-info">
+            💡 <span class="tips-icon">💡</span> <strong>Datos:</strong> Usa el mouse o el dedo en tu pantalla • Guarda tu obra maestra para compartir con amigos 🎉
+        </div>
+    </div>
+
+    <script src="drawing-app-kids.js"></script>
+</body>
+</html>
