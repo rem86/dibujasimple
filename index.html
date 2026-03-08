@@ -191,10 +191,18 @@
                 </select>
             </div>
 
-            <div class="tool-group">
+            <div class="tool-group stickers-section">
+                <button id="btn-stickers" class="primary" title="Stickers">✨ Stickers</button>
                 <button id="btn-undo" class="secondary">⬅️ Deshacer</button>
                 <button id="btn-clear" class="secondary">🗑️ Borrar todo</button>
                 <button id="btn-save" class="primary">💾 Guardar</button>
+            </div>
+
+            <div class="sticker-panel hidden" style="margin-top:1rem; width:100%; max-width:800px; background:#fff; padding:1rem; border-radius:12px; display:none;">
+                <h3 style="color:#667eea; margin-bottom:0.5rem;">🎨 Stickers Library</h3>
+                <div class="sticker-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(60px,1fr)); gap:0.5rem;">
+                    <!-- Stickers dinámicos cargados por JS -->
+                </div>
             </div>
         </div>
 
