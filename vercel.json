@@ -1,21 +1,11 @@
 {
-  "builds": [
-    {"src": "index.html", "use": "@vercel/static"},
-    {"src": "src/stickers.html", "use": "@vercel/static"}
-  ],
   "outputDirectory": ".",
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
-        }
+        {"key": "X-Frame-Options", "value": "DENY"},
+        {"key": "X-XSS-Protection", "value": "1; mode=block"}
       ]
     }
   ],
