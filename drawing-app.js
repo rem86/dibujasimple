@@ -44,36 +44,119 @@ document.addEventListener('DOMContentLoaded', () => {
     // 💾 Guardar estado inicial (fondo blanco)
     saveHistoryState();
     
-    // 🖱️ Eventos de mouse y touch para escritorio y móvil
+    // 🖱️ Eventos de mouse para escritorio + touch optimizados para móvil
     canvas.addEventListener('mousedown', startDrawing);
     canvas.addEventListener('mousemove', draw);
     canvas.addEventListener('mouseup', stopDrawing);
     canvas.addEventListener('mouseout', stopDrawing);
     
-    // Touch events para tablets/móviles
+    // ✅ Touch events CRÍTICOS PARA MÓVIL - optimizados con passive:false
     canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault(); // 🚫 Evitar scroll en móvil
         const touch = e.touches[0];
         const mouseEvent = new MouseEvent('mousedown', {
+            bubbles: true,
+            cancelable: true,
+            view: window,
             clientX: touch.clientX,
-            clientY: touch.clientY
+            clientY: touch.clientY,
+            buttons: 1
         });
         canvas.dispatchEvent(mouseEvent);
-    });
+    }, { passive: false }); // CRÍTICO para preventDefault funcionar
     
     canvas.addEventListener('touchmove', (e) => {
-        e.preventDefault(); // Evitar scroll mientras dibujas
+        e.preventDefault(); // 🚫 Bloquear scroll mientras dibujas en móvil
         const touch = e.touches[0];
+        
+        if (isDrawing && this.isMobileDevice()) {
+            // Modo dibujo activado → redispachar evento mouse
+            const rect = canvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            ctx.lineWidth = brushSize;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            if (eraserMode) {
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.strokeStyle = '#ffffff';
+            } else {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.strokeStyle = currentColor;
+            }
+            
+            // Dibujar línea desde última posición hasta actual
+            if (!ctx.beginPath) ctx.beginPath();
+            
+            const lastPoint = getLastDrawPosition();
+            if (lastPoint) {
+                ctx.moveTo(lastPoint.x, lastPoint.y);
+                ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+                ctx.stroke();
+                saveLastPoint(touch.clientX, touch.clientY);
+            }
+            
+            return; // No dispatchear para mejor rendimiento
+        }
+        
         const mouseEvent = new MouseEvent('mousemove', {
+            bubbles: true,
+            cancelable: true,
+            view: window,
             clientX: touch.clientX,
-            clientY: touch.clientY
+            clientY: touch.clientY,
+            buttons: 1
         });
         canvas.dispatchEvent(mouseEvent);
-    });
+    }, { passive: false }); // CRÍTICO para preventDefault funcionar en iOS
     
-    canvas.addEventListener('touchend', () => {
-        const mouseEvent = new MouseEvent('mouseup', {});
+    canvas.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        const mouseEvent = new MouseEvent('mouseup', {
+            bubbles: true,
+            cancelable: true,
+            view: window,
+            buttons: 1
+        });
         canvas.dispatchEvent(mouseEvent);
-    });
+        
+        // Guardar estado al finalizar touch
+        if (isDrawing) {
+            isDrawing = false;
+            saveHistoryState(canvas.toDataURL());
+        }
+    }, { passive: false });
+
+    // Helper: Detectar dispositivo móvil
+    function isMobileDevice() {
+        return /Android|iPhone|iPod/i.test(navigator.userAgent);
+    }
+    
+    // Helper: Obtener última posición dibujada
+    function getLastDrawPosition() {
+        const points = getStrokePoints();
+        if (!points || points.length === 0) return null;
+        
+        return { x: points[points.length - 1].x, y: points[points.length - 1].y };
+    }
+    
+    // Helper: Guardar última posición (persistir entre touches)
+    function saveLastPoint(x, y) {
+        // Simplificado para demo - en producción usar localStorage de puntos
+        const lastPoint = getLastDrawPosition();
+        if (lastPoint && lastPoint.x !== x || !lastPoint) {
+            lastPoint.x = x;
+            lastPoint.y = y;
+        }
+    }
+    
+    // Helper: Obtener puntos del stroke actual (simplificado para demo)
+    function getStrokePoints() {
+        return null; // En producción usar data API del canvas
+    }
+
     
     // 🎨 Funciones principales de dibujo
     function startDrawing(e) {
