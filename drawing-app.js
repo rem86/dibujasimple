@@ -1,10 +1,10 @@
 /**
- * 🎨 DibujaSimple - App de dibujo simple para todos (MÓVIL CRÓNICO)
- * Versión: 2.0.1 | Stack: HTML5 Canvas + JS Nativo optimizado
+ * 🎨 DibujaSimple - App de dibujo simple para todos (CORREGIDO MÓVIL)
+ * Versión: 2.0.2 | Stack: HTML5 Canvas + JS Nativo optimizado
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🎨 DibujaSimple inicializando...');
+    console.log('🎨 [MOBILE FIX]: DibujaSimple inicializando...');
     
     // 🔧 Elementos DOM
     const canvas = document.getElementById('drawing-canvas');
@@ -35,91 +35,54 @@ document.addEventListener('DOMContentLoaded', () => {
     let history = [];
     let historyIndex = -1;
     
-    // 📱 Optimización móvil
-    let isTouchDevice = /Android|iPhone|iPod/i.test(navigator.userAgent);
-    let lastDrawPosition = { x: 0, y: 0 }; // Posición última para dibujar líneas continuas
+    // 📱 CORRECCIÓN MÓVIL: dimensiones reales vs CSS
+    let realWidth = canvas.width;
+    let realHeight = canvas.height;
+    let scaleX = canvas.width / canvas.offsetWidth; // Ratio escalado
+    let scaleY = canvas.height / canvas.offsetHeight;
+    let lastDrawPosition = { x: 0, y: 0 }; 
+    
+    // 📱 Detectar si es móvil para ajustar cálculos
+    function getRealCoordinates(e) {
+        const rect = canvas.getBoundingClientRect();
+        
+        if (e.touches && e.touches.length > 0) {
+            return {
+                x: (e.touches[0].clientX - rect.left),
+                y: (e.touches[0].clientY - rect.top)
+            };
+        } else if (e.clientX !== undefined) {
+            return {
+                x: (e.clientX - rect.left),
+                y: (e.clientY - rect.top)
+            };
+        }
+        
+        return { x: 0, y: 0 };
+    }
     
     // 🎨 Inicializar canvas con fondo blanco
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, realWidth, realHeight);
     
     saveHistoryState();
     
-    // 🖱️ Eventos de mouse y touch para escritorio y móvil optimizados
-    function handlePointerDown(e) {
-        e.cancelable && e.preventDefault();
-        
+    // 🖱️ Eventos de mouse para escritorio
+    canvas.addEventListener('mousedown', (e) => {
         isDrawing = true;
         
-        // Obtener coordenadas relativas al canvas
-        const rect = canvas.getBoundingClientRect();
-        let clientX, clientY;
-        
-        if (e.touches && e.touches.length > 0) {
-            clientX = e.touches[0].clientX;
-            clientY = e.touches[0].clientY;
-        } else {
-            clientX = e.clientX;
-            clientY = e.clientY;
-        }
-        
-        lastDrawPosition.x = clientX - rect.left;
-        lastDrawPosition.y = clientY - rect.top;
-        
+        const coords = getRealCoordinates(e);
+        lastDrawPosition.x = coords.x;
+        lastDrawPosition.y = coords.y;
         startDrawing();
-    }
-    
-    function handlePointerMove(e) {
-        if (!isDrawing) return;
-        
-        const rect = canvas.getBoundingClientRect();
-        let clientX, clientY;
-        
-        if (e.touches && e.touches.length > 0) {
-            clientX = e.touches[0].clientX;
-            clientY = e.touches[0].clientY;
-        } else {
-            clientX = e.clientX;
-            clientY = e.clientY;
-        }
-        
-        const x = clientX - rect.left;
-        const y = clientY - rect.top;
-        
-        draw(x, y);
-    }
-    
-    function handlePointerUp(e) {
-        if (!isDrawing) return;
-        
-        isDrawing = false;
-        saveHistoryState();
-    }
-    
-    // Event listeners unificados - mouse + touch optimizados para móviles
-    canvas.addEventListener('mousedown', (e) => {
-        e.cancelable && e.preventDefault();
-        handlePointerDown(e);
     });
     
     canvas.addEventListener('mousemove', (e) => {
         if (!isDrawing) return;
         
-        const rect = canvas.getBoundingClientRect();
-        let clientX, clientY;
-        
-        if (e.touches) {
-            clientX = e.touches[0].clientX;
-            clientY = e.touches[0].clientY;
-        } else {
-            clientX = e.clientX;
-            clientY = e.clientY;
-        }
-        
-        const x = clientX - rect.left;
-        const y = clientY - rect.top;
-        draw(x, y);
-    }, { passive: true });
+        const coords = getRealCoordinates(e);
+        draw(coords.x, coords.y);
+    });
     
     canvas.addEventListener('mouseup', () => {
         if (isDrawing) {
@@ -128,25 +91,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    canvas.addEventListener('mouseout', () => {
-        if (isDrawing) {
-            isDrawing = false;
-            saveHistoryState();
-        }
-    });
-    
-    // ✅ Touch events CRÍTICOS PARA MÓVIL - optimizados con passive:false
+    // ✅ Touch events optimizados para móviles - COORDENADAS CORREGIDAS
     canvas.addEventListener('touchstart', (e) => {
         e.cancelable && e.preventDefault();
         
-        const touch = e.touches[0];
+        const coords = getRealCoordinates(e);
         
-        handlePointerDown({
-            clientX: touch.clientX,
-            clientY: touch.clientY,
-            cancelable: true,
-            preventDefault: () => {}
-        });
+        isDrawing = true;
+        lastDrawPosition.x = coords.x;
+        lastDrawPosition.y = coords.y;
+        
+        console.log('👆 [TOUCH]: Started drawing at X:', Math.round(coords.x));
+        startDrawing();
     }, { passive: false }); // CRÍTICO para iOS + Android
     
     canvas.addEventListener('touchmove', (e) => {
@@ -154,24 +110,22 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (!isDrawing) return;
         
-        const touch = e.touches[0];
-        const rect = canvas.getBoundingClientRect();
-        const x = touch.clientX - rect.left;
-        const y = touch.clientY - rect.top;
-        
-        draw(x, y);
+        const coords = getRealCoordinates(e);
+        draw(coords.x, coords.y);
     }, { passive: false }); // CRÍTICO para iOS + Android
     
     canvas.addEventListener('touchend', (e) => {
         e.cancelable && e.preventDefault();
         
-        handlePointerUp(e);
+        if (isDrawing) {
+            isDrawing = false;
+            saveHistoryState();
+        }
         
-        // Guardar último estado al soltar
-        saveHistoryState();
+        console.log('👆 [TOUCH]: Drawing ended');
     }, { passive: false });
     
-    // 🎨 Funciones principales de dibujo
+    // 🎨 Función principal de dibujo
     function startDrawing() {
         // Iniciar nuevo path si es necesario
         if (!ctx.beginPath) ctx.beginPath();
@@ -184,24 +138,18 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (eraserMode) {
             ctx.globalCompositeOperation = 'destination-out';
-            ctx.strokeStyle = '#ffffff'; // Color blanco para borrar
+            ctx.strokeStyle = '#ffffff';
         } else {
             ctx.globalCompositeOperation = 'source-over';
             ctx.strokeStyle = currentColor;
         }
         
         // Dibujar desde última posición hasta actual
-        if (lastDrawPosition.x !== x || lastDrawPosition.y !== y) {
-            ctx.moveTo(lastDrawPosition.x, lastDrawPosition.y);
-            ctx.lineTo(x, y);
-            ctx.stroke();
-            
-            // Actualizar última posición
-            lastDrawPosition.x = x;
-            lastDrawPosition.y = y;
-        }
-    }
-    
-    function stopDrawing() {
-        // Ya manejado por handlePointerUp
+        ctx.beginPath();
+        ctx.moveTo(lastDrawPosition.x, lastDrawPosition.y);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        
+        lastDrawPosition.x = x;
+        lastDrawPosition.y = y;
     }
