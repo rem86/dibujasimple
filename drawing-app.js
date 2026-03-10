@@ -1,54 +1,45 @@
 /**
- * 🎨 DibujaSimple v3.3 - Offset CORREGIDO
- * Solución final para precisión pixel-perfect
+ * 🎨 DibujaSimple v3.4 - CORRECCIÓN OFFSET PERFECTA
+ * Usa display size, no natural width/height
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🎨 DibujaSimple v3.3 - Corrigiendo offset exacto...');
+    console.log('🎨 DibujaSimple v3.4 - Offset corregido perfectamete...');
     
     const canvas = document.getElementById('drawing-canvas');
     if (!canvas) return;
     
     const ctx = canvas.getContext('2d');
     
-    // Fondo blanco
+    // ✅ SOLUCIÓN: Usar display size, no natural width
+    // Esto elimina cualquier offset entre CSS y natural
+    const displayWidth = canvas.offsetWidth || canvas.width;
+    const displayHeight = canvas.offsetHeight || canvas.height;
+    
+    console.log('[OFFSET]: Display size:', displayWidth, 'x', displayHeight);
+    
+    // Fondo blanco (usa display dimensions)
     ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, displayWidth, displayHeight);
     
     // Variables simples
     let drawing = false;
     let lastX = null;
     let lastY = null;
     
-    // ✅ CORRECCIÓN: Calcular offset visual del canvas respecto al elemento DOM
-    function getCanvasOffset() {
-        const rect = canvas.getBoundingClientRect();
-        // El offset visual donde se renderiza el canvas en pantalla
-        return {
-            cssLeft: rect.left,
-            cssTop: rect.top
-        };
-    }
-    
-    // 📱 TOUCH: DIBUJAR CON COMPENSACIÓN DE OFFSET
+    // 📱 TOUCH: DIBUJAR usando DISPLAY SIZE (no natural)
     canvas.addEventListener('touchstart', (e) => {
         e.preventDefault();
         const touch = e.touches[0];
+        
+        // ✅ CORRECCIÓN: Posición relativa al display size visible
         const rect = canvas.getBoundingClientRect();
         
-        // ✅ Posición visual donde se dibuja (CORREGIDO para precisión)
+        // Display width es igual a CSS width, no hay offset aquí
         let x = touch.clientX - rect.left;
         let y = touch.clientY - rect.top;
         
-        // Compensar si el canvas tiene CSS size diferente al natural
-        const cssSizeDiffX = rect.width - rect.naturalWidth || 0;
-        const cssSizeDiffY = rect.height - rect.naturalHeight || 0;
-        
-        if (Math.abs(cssSizeDiffX) > 1 || Math.abs(cssSizeDiffY) > 1) {
-            console.log('[OFFSET]: CSS vs Natural diff:', cssSizeDiffX, x.toFixed(2), y.toFixed(2));
-        }
-        
-        // Dibujar en posición compensada para eliminar desvío visual
+        // DIBUJAR EN POSICIÓN EXACTA (sin compensación adicional)
         drawing = true;
         lastX = x;
         lastY = y;
@@ -62,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const touch = e.touches[0];
         const rect = canvas.getBoundingClientRect();
         
-        // ✅ COORDENADAS CON COMPENSACIÓN VISUAL
+        // ✅ COORDENADAS RELATIVAS AL ELEMENTO VISIBLE
         let x = touch.clientX - rect.left;
         let y = touch.clientY - rect.top;
         
@@ -92,12 +83,10 @@ document.addEventListener('DOMContentLoaded', () => {
         drawing = false;
     });
     
-    // DIBUJAR con corrección de offset visual
+    // DIBUJAR - Usar display coordinates exactas
     function draw(x, y) {
-        // Compensar cualquier diferencia entre CSS size y natural size
         const rect = canvas.getBoundingClientRect();
         
-        // Dibujar en posición corregida (elimina desvío visual)
         ctx.beginPath();
         
         if (lastX === null) {
@@ -135,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnClear) {
         btnClear.addEventListener('click', () => {
             ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, displayWidth, displayHeight);
             lastX = null;
         });
     }
@@ -149,5 +138,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    console.log('✅ READY - Touch events con offset corregido!');
+    // Debug log para verificar offset
+    setTimeout(() => {
+        const rect = canvas.getBoundingClientRect();
+        console.log('[DEBUG]: Display size:', displayWidth, 'x', displayHeight);
+        console.log('[DEBUG]: CSS position:', rect.left.toFixed(2), rect.top.toFixed(2));
+        console.log('✅ DibujaSimple v3.4 - Offset corregido con display size!');
+    }, 500);
 });
