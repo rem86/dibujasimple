@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DibujaSimple - Dibuja Fácil y Divertido 🎨 (Version 2.0)</title>
+    <style>
+        /* 🎨 Estilos base + mejoras para stickers y exportación */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Comic Sans MS', 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            background: white;
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            max-width: 100%;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+        }
+
+        .tool-group {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        button, select, input[type="color"] {
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: 2px solid transparent;
+        }
+
+        button:hover {
+            background: #5a6fd6;
+            transform: translateY(-2px);
+        }
+
+        button.active {
+            background: #667eea;
+            border-color: #f8f9fa;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.3);
+        }
+
+        button.secondary {
+            background: #6c757d;
+        }
+
+        button.primary {
+            background: #28a745;
+        }
+
+        .color-picker {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        input[type="color"] {
+            width: 50px;
+            height: 40px;
+            border: none;
+            cursor: pointer;
+        }
+
+        canvas {
+            border: 3px solid #667eea;
+            border-radius: 8px;
+            background: white;
+            cursor: crosshair;
+            display: block;
+            max-width: 100%;
+            margin: 0 auto;
+            touch-action: none;
+        }
+
+        .toolbar-info {
+            font-size: 0.875rem;
+            color: #6c757d;
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+
+        /* 🎨 Stickers panel */
+        .sticker-panel {
+            margin-top: 1rem;
+            width: 100%;
+            max-width: 800px;
+            background: #fff;
+            padding: 1rem;
+            border-radius: 12px;
+            display: none;
+        }
+
+        .sticker-panel.visible {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .sticker-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+            gap: 0.5rem;
+        }
+
+        .sticker-item {
+            font-size: 32px;
+            text-align: center;
+            cursor: grab;
+            background: #f8f9fa;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .sticker-item:hover {
+            background: #e3ebf5;
+            transform: scale(1.1);
+        }
+
+        /* 📤 Export options panel */
+        .export-options {
+            display: none;
+            margin-top: 0.5rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .export-options.show {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 1.5rem; }
+            
+            .toolbar { flex-direction: column; gap: 0.75rem; }
+            
+            canvas { max-width: 100%; border-width: 2px; }
+
+            button, select, input[type="color"] { width: 100%; padding: 0.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>🎨 DibujaSimple v2.0</h1>
+            <p style="color: #6c757d;">Dibuja fácil y divertido — ¡incluso los niños pueden!</p>
+            <p style="font-size: 0.875rem; color: #28a745; margin-top: 0.5rem;">✨ Issues completados: Stickers • Auto-save • Export • Mobile • Colores • Galería</p>
+        </header>
+
+        <div class="toolbar">
+            <div class="tool-group">
+                <button id="btn-pencil" class="active" title="Lápiz">🖊️ Lápiz</button>
+                <button id="btn-brush-1" title="Pincel Gordo">🎨 Pincel 1</button>
+                <button id="btn-brush-2" title="Pincel Fino">✨ Pincel 2</button>
+            </div>
+
+            <div class="tool-group color-picker">
+                <label for="color-input">Color:</label>
+                <input type="color" id="color-input" value="#000000">
+            </div>
+
+            <div class="tool-group">
+                <button id="btn-size-small" title="Grosor pequeño">📏 Fino</button>
+                <button id="btn-size-medium" class="active" title="Grosor medio">📏 Medio</button>
+                <button id="btn-size-large" title="Grosor grande">📅 Gordo</button>
+            </div>
+
+            <div class="tool-group">
+                <select id="eraser-toggle" title="Borrador">
+                    <option value="draw">✏️ Dibuja</option>
+                    <option value="erase">🧹 Borrador</option>
+                </select>
+            </div>
+
+            <div class="tool-group stickers-section">
+                <button id="btn-stickers" title="Stickers">✨ Stickers</button>
+                <button id="btn-undo" class="secondary">⬅️ Deshacer</button>
+                <button id="btn-clear" class="secondary">🗑️ Borrar todo</button>
+                <button id="btn-save" class="primary">💾 Guardar</button>
+            </div>
+
+            <!-- Botón exportación avanzada -->
+            <div class="tool-group export-buttons">
+                <button id="btn-export-toggle" style="background:#667eea;">📤 Exportar</button>
+            </div>
+        </div>
+
+        <!-- Panel de stickers -->
+        <div class="sticker-panel" id="sticker-panel-toggle">
+            <h3 style="color:#667eea;margin-bottom:0.5rem;">🎨 Stickers Library</h3>
+            <p style="font-size:0.875rem;color:#6c757d;margin-bottom:1rem;">Arrastra stickers al canvas o haz clic para pegar.</p>
+            <div class="sticker-grid" id="sticker-grid">
+                <!-- Stickers cargados dinámicamente -->
+            </div>
+        </div>
+
+        <canvas id="drawing-canvas" width="800" height="600"></canvas>
+
+        <p class="toolbar-info">
+            💡 Tips: Usa mouse o dedo para dibujar • Arrastra stickers • Auto-guardado activado • ¡Diviértete creando! 🎨
+        </p>
+
+    </div>
+
+    <!-- Scripts principales -->
+    <script src="drawing-app.js"></script>
+    <script src="stickers-library.js"></script>
+    <script src="auto-save-system.js"></script>
+    <script src="export-enhanced.js"></script>
+    <script src="mobile-optimizer.js"></script>
+    <script src="advanced-colors.js"></script>
+    <script src="gallery-gallery.js"></script>
+
+    <!-- Integración final y inicialización -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎨 [INTEGRATION]: DibujaSimple v2.0 integrado con todas las features!');
+            
+            // 1. Toggle panel stickers
+            const btnStickers = document.getElementById('btn-stickers');
+            const stickerPanel = document.getElementById('sticker-panel-toggle');
+            if (btnStickers && stickerPanel) {
+                btnStickers.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const isVisible = stickerPanel.classList.contains('visible');
+                    
+                    if (!isVisible) {
+                        stickerPanel.classList.add('visible');
+                        this.classList.add('active');
+                        
+                        // Inicializar librería de stickers si no existe
+                        if (!window.stickerLibrary) {
+                            try {
+                                window.stickerLibrary = new StickerLibrary();
+                                console.log('✅ [STICKERS]: Library initialized!');
+                            } catch (err) {
+                                console.error('[STICKERS]: Init failed:', err.message);
+                            }
+                        }
+                    } else {
+                        stickerPanel.classList.remove('visible');
+                        this.classList.remove('active');
+                    }
+                });
+            }
+            
+            // 2. Export toggle button
+            const btnExportToggle = document.getElementById('btn-export-toggle');
+            if (btnExportToggle) {
+                btnExportToggle.addEventListener('click', function() {
+                    const exportPanel = this.nextElementSibling;
+                    if (exportPanel) {
+                        exportPanel.classList.toggle('show');
+                        this.textContent = exportPanel.classList.contains('show') 
+                            ? '📭 Ocultar opciones' 
+                            : '📤 Exportar';
+                    }
+                });
+            }
+            
+            // 3. Inicializar auto-save
+            setTimeout(() => {
+                if (!window.dibujasimpleAutoSave) {
+                    try {
+                        new AutoSaveSystem('drawing-canvas');
+                        window.dibujasimpleAutoSave = true;
+                        console.log('✅ [AUTOSAVE]: Auto-save system running!');
+                    } catch (err) {
+                        console.error('[AUTOSAVE]: Init failed:', err.message);
+                    }
+                }
+            }, 500);
+            
+            // 4. Export enhanced initialization  
+            setTimeout(() => {
+                if (!window.dibujasimpleEnhancedExporter) {
+                    try {
+                        new EnhancedExporter();
+                        window.dibujasimpleEnhancedExporter = true;
+                        console.log('✅ [EXPORT]: Enhanced exporter ready!');
+                    } catch (err) {
+                        console.error('[EXPORT]: Init failed:', err.message);
+                    }
+                }
+            }, 500);
+            
+            // 5. Mobile optimizer initialization
+            setTimeout(() => {
+                if (!window.dibujasimpleMobileOptimizer) {
+                    try {
+                        new MobileOptimizer();
+                        window.dibujasimpleMobileOptimizer = true;
+                        console.log('✅ [MOBILE]: Touch optimization active!');
+                    } catch (err) {
+                        console.error('[MOBILE]: Init failed:', err.message);
+                    }
+                }
+            }, 500);
+            
+            // 6. Advanced palette initialization
+            setTimeout(() => {
+                if (!window.dibujasimpleAdvancedPalette) {
+                    try {
+                        new AdvancedColorPalette();
+                        window.dibujasimpleAdvancedPalette = true;
+                        console.log('✅ [COLORS]: Advanced palette ready!');
+                    } catch (err) {
+                        console.error('[COLORS]: Init failed:', err.message);
+                    }
+                }
+            }, 500);
+            
+            // 7. Gallery initialization
+            setTimeout(() => {
+                if (!window.dibujasimpleGallery) {
+                    try {
+                        new DrawingGallery();
+                        window.dibujasimpleGallery = true;
+                        console.log('✅ [GALLERY]: Gallery system active!');
+                    } catch (err) {
+                        console.error('[GALLERY]: Init failed:', err.message);
+                    }
+                }
+            }, 500);
+            
+            // Tips de uso inicial
+            setTimeout(() => {
+                const tip = document.querySelector('.toolbar-info') || null;
+                if (tip && !tip.textContent.includes('ARRASTRAR')) {
+                    tip.innerHTML += ' 📌 Arrastra stickers! 💾 Auto-save ON!';
+                }
+            }, 1000);
+        });
+    </script>
+
+</body>
+</html>
