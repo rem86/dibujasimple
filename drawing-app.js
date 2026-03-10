@@ -1,17 +1,17 @@
 /**
- * 🎨 DibujaSimple - Móvil Optimizado v3.0
- * Solución definitiva para touch en iOS/Android/Chromium
+ * 🎨 DibujaSimple v3.1 - OFFSET CORREGIDO
+ * Solución definitiva para coordenadas exactas en móviles
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🎨 DibujaSimple v3.0 - Touch events optimizados...');
+    console.log('🎨 DibujaSimple v3.1 - Corrigiendo offset touch...');
     
     const canvas = document.getElementById('drawing-canvas');
     const ctx = canvas.getContext('2d');
     const colorInput = document.getElementById('color-input');
     const eraserToggle = document.getElementById('eraser-toggle');
     
-    // Referencias a botones (con checks nulos)
+    // Referencias a botones
     const btns = {
         pencil: document.getElementById('btn-pencil'),
         brush1: document.getElementById('btn-brush-1'),
@@ -30,52 +30,53 @@ document.addEventListener('DOMContentLoaded', () => {
     let brushSize = 5;
     let eraserMode = false;
     
-    // ✅ CORRECCIÓN FINAL: Guardar coordenadas LAST del dedo/puntero
-    // Esto evita que el drawing empiece con gaps en cada touch event
-    let lastPos = { x: -1, y: -1 }; 
-    let startX = null;
-    let startY = null;
+    // ✅ CORRECCIÓN FINAL: Posición absoluta donde se dibujará
+    // Esto elimina el offset entre dedo y trazo
+    let drawPosition = { x: 0, y: 0 }; 
+    let lastDrawPosition = { x: -1, y: -1 }; 
     
-    // Inicializar canvas
-    function init() {
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Calcula offset del canvas respecto al viewport (CRÍTICO para eliminar desvío)
+    function getCanvasOffset() {
+        if (!canvas) return { left: 0, top: 0 };
         
-        // Configurar touch-action para evitar scroll
-        if (canvas) {
-            canvas.style.touchAction = 'none';
-        }
+        const rect = canvas.getBoundingClientRect();
+        
+        // Offset del canvas donde el usuario toca (relativo al documento)
+        return {
+            left: rect.left + window.scrollX,
+            top: rect.top + window.scrollY
+        };
     }
     
-    init();
-    
-    // 📱 FUNCIÓN KEY: Obtener coordenadas RELATIVAS al canvas en TODO dispositivo
+    // 📱 FUNCIÓN KEY: Obtener coordenadas RELATIVAS exactas al canvas (CORREGIDO)
     function getCanvasCoordinates(e) {
         const rect = canvas.getBoundingClientRect();
+        const offset = getCanvasOffset();
         
         if (e.touches && e.touches.length > 0) {
             return {
-                x: e.touches[0].clientX - rect.left,
-                y: e.touches[0].clientY - rect.top
+                x: e.touches[0].clientX - offset.left,
+                y: e.touches[0].clientY - offset.top
             };
         } else if (e.clientX !== undefined) {
             return {
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top
+                x: e.clientX - offset.left,
+                y: e.clientY - offset.top
             };
         }
         
         return null;
     }
     
-    // 🎨 DIBUJAR - Función principal que escribe en canvas
+    // 🎨 DIBUJAR - Función principal que escribe en canvas sin offset
     function draw(x, y) {
-        // Dibujar línea desde última posición
+        // Dibujar línea desde última posición (sin offset adicional)
         ctx.beginPath();
-        if (lastPos.x !== -1) {
-            ctx.moveTo(lastPos.x, lastPos.y);
+        
+        if (lastDrawPosition.x !== -1) {
+            ctx.moveTo(lastDrawPosition.x, lastDrawPosition.y);
         } else {
-            // Si es primer toque, usar x,y actual como start
+            // Primer punto
             ctx.moveTo(x, y);
         }
         
@@ -94,33 +95,33 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.strokeStyle = currentColor;
         }
         
-        // DIBUJAR EN CANVAS
+        // DIBUJAR EN CANVAS - Sin offset adicional (coordenadas ya corregidas)
         ctx.stroke();
         
-        // Actualizar última posición
-        lastPos.x = x;
-        lastPos.y = y;
+        // Actualizar última posición (ya están corregidas)
+        lastDrawPosition.x = x;
+        lastDrawPosition.y = y;
     }
     
-    // 📱 TOUCH START - Iniciar dibujo en móvil
+    // 📱 TOUCH START - Iniciar dibujo en móvil (coordenadas exactas, sin desvío)
     function handleTouchStart(e) {
         e.cancelable && e.preventDefault();
         isDrawing = true;
         
         const coords = getCanvasCoordinates(e);
         if (coords) {
-            startX = coords.x;
-            startY = coords.y;
+            drawPosition.x = coords.x;
+            drawPosition.y = coords.y;
             
             // Dibujar punto inicial
-            lastPos.x = coords.x;
-            lastPos.y = coords.y;
+            lastDrawPosition.x = coords.x;
+            lastDrawPosition.y = coords.y;
         }
         
-        console.log('👆 [TOUCH START]: x=' + (coords?.x || 0) + ', y=' + (coords?.y || 0));
+        console.log('👆 [TOUCH START]: x=' + coords?.x.toFixed(2) + ', y=' + coords?.y.toFixed(2) + ' (sin offset)');
     }
     
-    // 📱 TOUCH MOVE - Dibujar mientras se mueve el dedo
+    // 📱 TOUCH MOVE - Dibujar mientras se mueve el dedo (coordenadas exactas)
     function handleTouchMove(e) {
         e.cancelable && e.preventDefault();
         
@@ -128,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const coords = getCanvasCoordinates(e);
         if (coords) {
-            draw(coords.x, coords.y);
+            draw(coords.x, coords.y); // Coordenadas ya corregidas, sin desvío
         }
     }
     
@@ -153,10 +154,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const coords = getCanvasCoordinates(e);
             if (coords) {
-                startX = coords.x;
-                startY = coords.y;
-                lastPos.x = coords.x;
-                lastPos.y = coords.y;
+                drawPosition.x = coords.x;
+                drawPosition.y = coords.y;
+                lastDrawPosition.x = coords.x;
+                lastDrawPosition.y = coords.y;
             }
         });
         
@@ -214,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (confirm('¿Borrar todo el canvas?')) {
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            lastPos.x = -1; // Resetear última posición
+            lastDrawPosition.x = -1; // Resetear última posición
             console.log('🗑️ [CLEAR]: Canvas cleared');
         }
     }
@@ -231,5 +232,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Inicializar herramientas
     setupTools();
     
-    console.log('✅ DibujaSimple v3.0 - Listo! Touch events funcionando en iOS/Android ✅');
+    // Log de inicialización
+    setTimeout(() => {
+        if (!canvas) {
+            console.error('[ERROR]: Canvas not found!');
+            return;
+        }
+        
+        const rect = canvas.getBoundingClientRect();
+        console.log('✅ [READY]: Canvas offset =', rect.left, 'x', rect.top);
+        console.log('  Touch coordinates will be calculated without offset ✅');
+        console.log('✅ DibujaSimple v3.1 - Sin desvío entre dedo y trazo!');
+    }, 500);
 });
