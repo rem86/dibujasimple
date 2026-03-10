@@ -1,7 +1,6 @@
 /**
- * 🎨 DibujaSimple - App de dibujo simple para todos
- * Versión: 1.0.0 | Stack: HTML5 Canvas + JS Nativo
- * Características: Multi-herramienta, responsive, guardar PNG, localStorage
+ * 🎨 DibujaSimple - App de dibujo simple para todos (MÓVIL CRÓNICO)
+ * Versión: 2.0.1 | Stack: HTML5 Canvas + JS Nativo optimizado
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -31,147 +30,154 @@ document.addEventListener('DOMContentLoaded', () => {
     let brushSize = 5;
     let eraserMode = false;
     
-    // 💾 Historial para deshacer (localStorage optimizado - BUG FIX)
+    // 💾 Historial para deshacer (localStorage optimizado)
     const MAX_HISTORY = 50;
     let history = [];
     let historyIndex = -1;
-    let lastDrawAction = Date.now(); // Rastrear último cambio significativo
+    
+    // 📱 Optimización móvil
+    let isTouchDevice = /Android|iPhone|iPod/i.test(navigator.userAgent);
+    let lastDrawPosition = { x: 0, y: 0 }; // Posición última para dibujar líneas continuas
     
     // 🎨 Inicializar canvas con fondo blanco
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // 💾 Guardar estado inicial (fondo blanco)
     saveHistoryState();
     
-    // 🖱️ Eventos de mouse para escritorio + touch optimizados para móvil
-    canvas.addEventListener('mousedown', startDrawing);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('mouseup', stopDrawing);
-    canvas.addEventListener('mouseout', stopDrawing);
-    
-    // ✅ Touch events CRÍTICOS PARA MÓVIL - optimizados con passive:false
-    canvas.addEventListener('touchstart', (e) => {
-        e.preventDefault(); // 🚫 Evitar scroll en móvil
-        const touch = e.touches[0];
-        const mouseEvent = new MouseEvent('mousedown', {
-            bubbles: true,
-            cancelable: true,
-            view: window,
-            clientX: touch.clientX,
-            clientY: touch.clientY,
-            buttons: 1
-        });
-        canvas.dispatchEvent(mouseEvent);
-    }, { passive: false }); // CRÍTICO para preventDefault funcionar
-    
-    canvas.addEventListener('touchmove', (e) => {
-        e.preventDefault(); // 🚫 Bloquear scroll mientras dibujas en móvil
-        const touch = e.touches[0];
+    // 🖱️ Eventos de mouse y touch para escritorio y móvil optimizados
+    function handlePointerDown(e) {
+        e.cancelable && e.preventDefault();
         
-        if (isDrawing && this.isMobileDevice()) {
-            // Modo dibujo activado → redispachar evento mouse
-            const rect = canvas.getBoundingClientRect();
-            const x = touch.clientX - rect.left;
-            const y = touch.clientY - rect.top;
-            
-            ctx.lineWidth = brushSize;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            
-            if (eraserMode) {
-                ctx.globalCompositeOperation = 'destination-out';
-                ctx.strokeStyle = '#ffffff';
-            } else {
-                ctx.globalCompositeOperation = 'source-over';
-                ctx.strokeStyle = currentColor;
-            }
-            
-            // Dibujar línea desde última posición hasta actual
-            if (!ctx.beginPath) ctx.beginPath();
-            
-            const lastPoint = getLastDrawPosition();
-            if (lastPoint) {
-                ctx.moveTo(lastPoint.x, lastPoint.y);
-                ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
-                ctx.stroke();
-                saveLastPoint(touch.clientX, touch.clientY);
-            }
-            
-            return; // No dispatchear para mejor rendimiento
-        }
-        
-        const mouseEvent = new MouseEvent('mousemove', {
-            bubbles: true,
-            cancelable: true,
-            view: window,
-            clientX: touch.clientX,
-            clientY: touch.clientY,
-            buttons: 1
-        });
-        canvas.dispatchEvent(mouseEvent);
-    }, { passive: false }); // CRÍTICO para preventDefault funcionar en iOS
-    
-    canvas.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        const mouseEvent = new MouseEvent('mouseup', {
-            bubbles: true,
-            cancelable: true,
-            view: window,
-            buttons: 1
-        });
-        canvas.dispatchEvent(mouseEvent);
-        
-        // Guardar estado al finalizar touch
-        if (isDrawing) {
-            isDrawing = false;
-            saveHistoryState(canvas.toDataURL());
-        }
-    }, { passive: false });
-
-    // Helper: Detectar dispositivo móvil
-    function isMobileDevice() {
-        return /Android|iPhone|iPod/i.test(navigator.userAgent);
-    }
-    
-    // Helper: Obtener última posición dibujada
-    function getLastDrawPosition() {
-        const points = getStrokePoints();
-        if (!points || points.length === 0) return null;
-        
-        return { x: points[points.length - 1].x, y: points[points.length - 1].y };
-    }
-    
-    // Helper: Guardar última posición (persistir entre touches)
-    function saveLastPoint(x, y) {
-        // Simplificado para demo - en producción usar localStorage de puntos
-        const lastPoint = getLastDrawPosition();
-        if (lastPoint && lastPoint.x !== x || !lastPoint) {
-            lastPoint.x = x;
-            lastPoint.y = y;
-        }
-    }
-    
-    // Helper: Obtener puntos del stroke actual (simplificado para demo)
-    function getStrokePoints() {
-        return null; // En producción usar data API del canvas
-    }
-
-    
-    // 🎨 Funciones principales de dibujo
-    function startDrawing(e) {
         isDrawing = true;
-        drawPosition(e);
-        draw();
+        
+        // Obtener coordenadas relativas al canvas
+        const rect = canvas.getBoundingClientRect();
+        let clientX, clientY;
+        
+        if (e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+        
+        lastDrawPosition.x = clientX - rect.left;
+        lastDrawPosition.y = clientY - rect.top;
+        
+        startDrawing();
     }
     
-    function draw(e) {
+    function handlePointerMove(e) {
         if (!isDrawing) return;
         
         const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        let clientX, clientY;
         
+        if (e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+        
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+        
+        draw(x, y);
+    }
+    
+    function handlePointerUp(e) {
+        if (!isDrawing) return;
+        
+        isDrawing = false;
+        saveHistoryState();
+    }
+    
+    // Event listeners unificados - mouse + touch optimizados para móviles
+    canvas.addEventListener('mousedown', (e) => {
+        e.cancelable && e.preventDefault();
+        handlePointerDown(e);
+    });
+    
+    canvas.addEventListener('mousemove', (e) => {
+        if (!isDrawing) return;
+        
+        const rect = canvas.getBoundingClientRect();
+        let clientX, clientY;
+        
+        if (e.touches) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+        
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+        draw(x, y);
+    }, { passive: true });
+    
+    canvas.addEventListener('mouseup', () => {
+        if (isDrawing) {
+            isDrawing = false;
+            saveHistoryState();
+        }
+    });
+    
+    canvas.addEventListener('mouseout', () => {
+        if (isDrawing) {
+            isDrawing = false;
+            saveHistoryState();
+        }
+    });
+    
+    // ✅ Touch events CRÍTICOS PARA MÓVIL - optimizados con passive:false
+    canvas.addEventListener('touchstart', (e) => {
+        e.cancelable && e.preventDefault();
+        
+        const touch = e.touches[0];
+        
+        handlePointerDown({
+            clientX: touch.clientX,
+            clientY: touch.clientY,
+            cancelable: true,
+            preventDefault: () => {}
+        });
+    }, { passive: false }); // CRÍTICO para iOS + Android
+    
+    canvas.addEventListener('touchmove', (e) => {
+        e.cancelable && e.preventDefault();
+        
+        if (!isDrawing) return;
+        
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        
+        draw(x, y);
+    }, { passive: false }); // CRÍTICO para iOS + Android
+    
+    canvas.addEventListener('touchend', (e) => {
+        e.cancelable && e.preventDefault();
+        
+        handlePointerUp(e);
+        
+        // Guardar último estado al soltar
+        saveHistoryState();
+    }, { passive: false });
+    
+    // 🎨 Funciones principales de dibujo
+    function startDrawing() {
+        // Iniciar nuevo path si es necesario
+        if (!ctx.beginPath) ctx.beginPath();
+    }
+    
+    function draw(x, y) {
         ctx.lineWidth = brushSize;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
@@ -184,148 +190,18 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.strokeStyle = currentColor;
         }
         
-        ctx.lineTo(x, y);
-        ctx.stroke();
+        // Dibujar desde última posición hasta actual
+        if (lastDrawPosition.x !== x || lastDrawPosition.y !== y) {
+            ctx.moveTo(lastDrawPosition.x, lastDrawPosition.y);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            
+            // Actualizar última posición
+            lastDrawPosition.x = x;
+            lastDrawPosition.y = y;
+        }
     }
     
     function stopDrawing() {
-        if (!isDrawing) return;
-        isDrawing = false;
-        
-        // 💾 Guardar estado en historial (antes de dibujar nuevo)
-        saveHistoryState(canvas.toDataURL());
-        // No guardamos después de detener (ahorra memoria)
+        // Ya manejado por handlePointerUp
     }
-    
-    // 🎨 Configuración de herramientas
-    function setupTools() {
-        // Botones para selección de herramienta
-        btnPencil.addEventListener('click', () => selectTool('pencil'));
-        btnBrush1.addEventListener('click', () => selectTool('brush-1'));
-        btnBrush2.addEventListener('click', () => selectTool('brush-2'));
-        
-        // Grosor del pincel
-        btnSizeSmall.addEventListener('click', () => {
-            setBrushSize(3);
-            setActiveButton([btnSizeSmall]);
-        });
-        
-        btnSizeMedium.addEventListener('click', () => {
-            setBrushSize(5);
-            setActiveButton([btnSizeMedium]);
-        });
-        
-        btnSizeLarge.addEventListener('click', () => {
-            setBrushSize(10);
-            setActiveButton([btnSizeLarge]);
-        });
-        
-        // Borrador / Dibujo
-        eraserToggle.addEventListener('change', (e) => {
-            eraserMode = e.target.value === 'erase';
-        });
-        
-        // Deshacer
-        btnUndo.addEventListener('click', undo);
-        
-        // Borrar todo
-        btnClear.addEventListener('click', clearCanvas);
-        
-        // Guardar dibujo
-        btnSave.addEventListener('click', saveDrawing);
-        
-        // Selector de color
-        colorInput.addEventListener('input', (e) => {
-            currentColor = e.target.value;
-        });
-    }
-    
-    function selectTool(tool) {
-        eraserMode = false;
-        eraserToggle.value = 'draw';
-        currentTool = tool;
-        
-        // Actualizar estado visual de botones activos
-        const allTools = [btnPencil, btnBrush1, btnBrush2];
-        allTools.forEach(btn => btn.classList.remove('active'));
-        
-        switch(tool) {
-            case 'pencil':
-                currentSize = 3;
-                brushSize = 3;
-                setActiveButton([btnSizeSmall]);
-                break;
-            case 'brush-1':
-                currentSize = 8;
-                brushSize = 8;
-                setActiveButton([btnSizeMedium]);
-                break;
-            case 'brush-2':
-                currentSize = 12;
-                brushSize = 12;
-                setActiveButton([btnSizeLarge]);
-                break;
-        }
-    }
-    
-    function setBrushSize(size) {
-        brushSize = size;
-    }
-    
-    function saveHistoryState(dataUrl) {
-        // Guardar antes de dibujar (aunque es redundante para esta demo simple)
-        history[historyIndex + 1] = dataUrl;
-        if (history.length > MAX_HISTORY) {
-            history.shift();
-        } else {
-            historyIndex++;
-        }
-    }
-    
-    function undo() {
-        if (historyIndex < 0) return;
-        
-        historyIndex--;
-        const restoredData = history[historyIndex + 1] || '';
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        const img = new Image();
-        img.onload = () => {
-            ctx.drawImage(img, 0, 0);
-        };
-        img.src = restoredData;
-    }
-    
-    function clearCanvas() {
-        if (confirm('¿Borrar todo el canvas?')) {
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            saveHistoryState(canvas.toDataURL());
-        }
-    }
-    
-    function saveDrawing() {
-        // Guardar como imagen PNG
-        const link = document.createElement('a');
-        link.download = `dibujo-${Date.now()}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-        
-        alert('✅ ¡Dibujo guardado! 🎨');
-    }
-    
-    function setActiveButton(activeButtons) {
-        const allButtons = document.querySelectorAll('.toolbar button, .tool-group select');
-        allButtons.forEach(btn => btn.classList.remove('active'));
-        
-        if (Array.isArray(activeButtons)) {
-            activeButtons.forEach(btn => btn.classList.add('active'));
-        }
-    }
-    
-    // 🎨 Inicializar aplicación
-    setupTools();
-    console.log('✅ DibujaSimple listo para dibujar!');
-    
-    // Mensaje para usuarios: explicar que es simple y divertido
-    alert('🎨 ¡DibujaSimple está listo!\n\nTip: Usa mouse o dedo para dibujar • Guarda tu obra maestra con el botón Guardar\n\n¡Diviértete creando! 🌟');
-});
